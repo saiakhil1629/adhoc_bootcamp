@@ -1,3 +1,10 @@
+function doGet() {
+  return ContentService
+    .createTextOutput(JSON.stringify({ ok: true, message: "API Running" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+
 // 1) Paste your Apps Script Web App URL here:
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz2ywkyPuOQYHKGOdRzzW8KQyb5DYJBY4HplxHckP_j_fpERm2k1Sr6DwiNWKuqQ0H1Jg/exec";
 
@@ -244,5 +251,6 @@ window.addEventListener("load", () => {
 });
 
 SpreadsheetApp.getActiveSpreadsheet()
+
 
 
