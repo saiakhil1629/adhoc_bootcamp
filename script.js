@@ -191,22 +191,47 @@ document.getElementById("teamForm").addEventListener("submit", async (e) => {
   try {
     const res = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      headers: { "Content-Type": "application/json;charset=utf-8" },
       body: JSON.stringify(payload)
     });
 
-    const data = await res.json().catch(() => ({}));
-    if (data.ok) {
-      setStatus("Submitted successfully. Thank you!", "ok");
-      e.target.reset();
-      otherWrap.classList.add("hidden");
+    const raw = await res.text().catch(() => "");
+    let data = {};
+    try { data = raw ? JSON.parse(raw) : {}; } catch (parseErr) { /* not JSON */ }
+
+    if (res.ok) {
+      // Prefer explicit success flag from backend, otherwise treat 2xx as success
+      if (data.ok === true || data.success === true || data.result) {
+        setStatus("Submitted successfully. Thank you!", "ok");
+        e.target.reset();
+        otherWrap.classList.add("hidden");
+      } else if (data && (data.ok === false || data.message)) {
+        setStatus(data.message || "Submit failed. Please try again or contact coordinator.", "error");
+        console.error("Server response:", res.status, raw);
+      } else {
+        // Unknown response body but 2xx status
+        setStatus("Submitted (unknown server response). If you don't see confirmation, contact coordinator.", "ok");
+        console.warn("Unexpected server response (2xx):", res.status, raw);
+      }
     } else {
-      setStatus(data.message || "Submit failed. Please try again or contact coordinator.", "error");
-      console.error(data);
+      // Non-2xx status
+      const msg = data && data.message ? data.message : raw || `Server returned ${res.status}`;
+      setStatus(msg || "Submit failed. Please try again.", "error");
+      console.error("Server error:", res.status, raw);
     }
   } catch (err) {
-    console.error(err);
-    setStatus("Network error while submitting. Try again.", "error");
+    console.error("Fetch error:", err);
+    // Save submission locally so user doesn't lose data (retry manually later)
+    try {
+      const pendingKey = "pendingSubmissions";
+      const pending = JSON.parse(localStorage.getItem(pendingKey) || "[]");
+      pending.push({ payload, time: Date.now() });
+      localStorage.setItem(pendingKey, JSON.stringify(pending));
+      setStatus("Network error. Submission saved locally and can be retried later.", "error");
+    } catch (storageErr) {
+      console.error("Local save failed:", storageErr);
+      setStatus("Network error while submitting. Try again.", "error");
+    }
   } finally {
     submitBtn.disabled = false;
   }
@@ -217,4 +242,3 @@ window.addEventListener("load", () => {
   const MIN_LOADING_TIME = 5000;
   setTimeout(() => preloader.classList.add("hide"), MIN_LOADING_TIME);
 });
-
