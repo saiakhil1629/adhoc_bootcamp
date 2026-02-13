@@ -239,6 +239,9 @@ document.getElementById("teamForm").addEventListener("submit", async (e) => {
 
 window.addEventListener("load", () => {
   const preloader = document.getElementById("preloader");
-  const MIN_LOADING_TIME = 5000;
+  const MIN_LOADING_TIME = 3000;
   setTimeout(() => preloader.classList.add("hide"), MIN_LOADING_TIME);
 });
+
+SpreadsheetApp.getActiveSpreadsheet()
+
